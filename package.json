@@ -1,0 +1,30 @@
+{
+  "name": "diandian2md",
+  "version": "0.0.1",
+  "description": "convert diandian.com's blog posts to markdown",
+  "main": "src/dd2md",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://evecalm@github.com/evecalm/diandian2md.git"
+  },
+  "keywords": [
+    "diandian.com",
+    "markdown",
+    "migrate",
+    "backup"
+  ],
+  "dependencies":{
+    "to-markdown": ">0.0.1",
+    "iconv-lite": ">0.0.1",
+    "xml2js": ">0.0.1"
+  },
+  "author": "Saiya",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/evecalm/diandian2md/issues"
+  },
+  "homepage": "https://github.com/evecalm/diandian2md#readme"
+}
