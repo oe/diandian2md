@@ -4,7 +4,10 @@ fs = require 'fs'
 http = require 'http'
 mkdirp = require 'mkdirp'
 toMarkdown = require 'to-markdown'
+util = require 'util'
 {parseString} = require 'xml2js'
+
+
 
 # 生成文件的存储地址
 saveDir = ''
@@ -61,28 +64,27 @@ getContentFrom = (url, done)->
     if error
       console.error "can not read file <#{url}> because of #{error.message}"
     else
-      done str
+      parseString str, {explicitArray: false}, (error, xml)->
+        if error
+          console.error "failed to parse xml content because of #{error.message}"
+        else
+          xml = xml.DiandianBlogBackup
+          # 未指定文章地址
+          unless saveDir
+            saveDir = path.dirname rssPath
+            saveDir += "/#{xml.BlogInfo.BlogUrl}-posts"
+          done xml
+
     return
 
 # 解析rss内容
-parseRss = (content)->
-  parseString content, {explicitArray: false}, (error, xml)->
-    if error
-      console.error "failed to parse xml content because of #{error.message}"
-    else
-      xml = xml.DiandianBlogBackup
-      # 未指定文章地址
-      unless saveDir
-        saveDir = path.dirname rssPath
-        saveDir += "/#{xml.BlogInfo.BlogUrl}-posts"
+parseRss = (xml)->
+  getImageUrl.imgs = xml.Images.Image
 
-      getImageUrl.imgs = xml.Images.Image
+  getBlogMeta xml.BlogInfo
 
-      getBlogMeta xml.BlogInfo
+  parsePosts xml.Posts.Post
 
-      parsePosts xml.Posts.Post
-
-      # fs.writeFile 'love.log', JSON.stringify(xml, null, 2), 'utf-8'
 
 # 获取博客基础信息, 输出至yaml
 getBlogMeta = (blogInfo)->
@@ -123,6 +125,13 @@ downloadImg = (imgId, createdTime, savePath)->
   if matches and not (new RegExp("#{matches[1]}$").test(savePath))
     savePath += ".#{matches[1].toLowerCase()}"
   filePath = "#{saveDir}/#{savePath}"
+  
+  downloadFile url, filePath
+
+  savePath
+
+# 下载文件
+downloadFile = (url, filePath)->
   mkdirp.sync path.dirname filePath
   
   console.log "[info]start to download image <#{url}>"
@@ -133,12 +142,10 @@ downloadImg = (imgId, createdTime, savePath)->
   .on 'error', (error)->
     console.log "[error] failed to download image <#{url}>"
 
-  savePath
-
 # 解析文章数据
 parsePosts = (posts)->
-  # posts.forEach parsePost
-  parsePost posts[9]
+  posts.forEach parsePost
+  # parsePost posts[9]
 
 
 # 解析单篇文章
@@ -230,11 +237,48 @@ getBlogUri = (uri)->
   return '' unless uri
   /([^\/]+)$/.exec(uri)[1]
 
+# 重新下载图片
+redownloadImgs = (xml)->
+  imgs = xml.Images.Image
+  unless imgs.length
+    console.log "[info]nothing need to redownload"
+    return
+
+  imgs.forEach redownloadImg
+
+# 重新下载单张图片
+redownloadImg = (img)->
+  url = img.Url
+  fileName = img.Id + '.' + /\.(\w+)$/.exec(url)[1].toLowerCase()
+  matches = /\/d\/([\d]{4})\/([\d]{2})/.exec url
+  unless matches
+    console.log "[error] can not find image's <#{url}> date info"
+    return
+  filePath = "#{saveDir}/images/#{matches[1]}/#{matches[2]}/#{fileName}"
+  try
+    stats = util.inspect fs.statSync filePath
+    return if stats.size > 1024 * 4
+    fs.unlinkSync filePath
+  catch e
+    # console.log "[error] file e.message"
+  
+  console.log "[info]restart to download image <#{url}> to <#{filePath}>"
+  downloadFile url, filePath
+  
+  
+
 
 # 主函数
 main = ->
   args = process.argv.slice 2
-  # console.log 'started'
+  
+  cmd = ''
+  # 提取出命令字 以 - 开头
+  for v, k in args
+    if v[0] is '-'
+      cmd = v.slice 1
+      args.splice k, 1
+      break
   # rss 地址
   rssPath = args[0]
   # 文章保存地址
@@ -243,7 +287,11 @@ main = ->
   unless rssPath
     console.log 'rssPath or blog path must be specified'
     return
-
-  getContentFrom rssPath, parseRss
+  # 命令i表示重新下载未成功下载的图片
+  if cmd is 'i'
+    getContentFrom rssPath, redownloadImgs
+  else
+    getContentFrom rssPath, parseRss
+  
 
 do main    
