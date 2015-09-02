@@ -11,6 +11,7 @@ util = require 'util'
 
 # 生成文件的存储地址
 saveDir = ''
+rssPath = ''
 
 # 给数字添加前置0
 prefix0 = (n, len = 2)->
@@ -226,7 +227,6 @@ getPostMetaInfo = (post)->
 
 # 获取标签信息
 getBlogTags = (tags)->
-  console.log 'tags: ' + JSON.stringify tags
   return '' unless tags
   tags = tags.Tag
   tags = [tags] unless Array.isArray tags
@@ -271,7 +271,7 @@ redownloadImg = (img)->
 # 主函数
 main = ->
   args = process.argv.slice 2
-  
+
   cmd = ''
   # 提取出命令字 以 - 开头
   for v, k in args

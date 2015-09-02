@@ -3,11 +3,16 @@
 
 目前视频无法完全转换, 需要提供视频数据样本 = =
 
+程序会提取出博客的信息至 `blog-meta.yml` 文件中, 每篇博客的markdown文件开头会添加文章的 `frontmatter` 信息.
+
+通过本程序转换得到的markdown文件, 非常适合再结合 <https://hexo.io/> 等静态博客生成工具来再次生成你自己的博客.
+
 ## 准备工作
 
 1. 备份博客: 在[点点网](http://http://www.diandian.com/)可以访问时, 登录网站, 打开[备份页面](http://www.diandian.com/backup), 选择要备份的博客, 备份
 2. 安装 nodejs, 下载整个代码仓库并解压
 3. 在命令行中将工作路径切换至下载的代码仓库所在路径, 再先后执行下列命令
+  
   ```
   npm install -g coffee-script
   npm install
@@ -20,7 +25,7 @@
 ```
 coffee dd2md.coffee <xml-path> <output-directory>
 ```
-`<output-directory>` 可省略, 默认存放在 与 xml 相同路径下的 <blogname> - posts 文件夹下
+`<output-directory>` 可省略, 默认存放在 与 xml 相同路径下的 < blogname > - posts 文件夹下
 
 
 如 博客地址为 <http://love.diandian.com>, 那博客名为 love.  
