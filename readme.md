@@ -42,4 +42,10 @@ coffee dd2md.coffee ~/Download/diandian-blog-backup-love.xml
 coffee dd2md.coffee <xml-path> <output-directory> -i
 ```
 
+## 清理文章中下载失败的图片
+如果多次尝试重新下载图片均不成功， 八成图片已经不在这个地球上了。如果你的markdown是用来生成静态网站的，那么网站中引入不存在的图片会大大拖慢网站的加载速度。你可以用本命令清理markdown文件中以及images文件夹中不存在的图片。
+
+```
+coffee dd2md.coffee <output-directory> -c
+```
 

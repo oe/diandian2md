@@ -142,6 +142,8 @@ downloadFile = (url, filePath)->
     response.pipe file
   .on 'error', (error)->
     console.log "[error] failed to download image <#{url}>"
+  .on 'end', ->
+    console.log "[success] image <#{url}> download completed"
 
 # 解析文章数据
 parsePosts = (posts)->
@@ -256,7 +258,7 @@ redownloadImg = (img)->
     return
   filePath = "#{saveDir}/images/#{matches[1]}/#{matches[2]}/#{fileName}"
   try
-    stats = util.inspect fs.statSync filePath
+    stats = fs.statSync filePath
     return if stats.size > 1024 * 4
     fs.unlinkSync filePath
   catch e
@@ -265,8 +267,43 @@ redownloadImg = (img)->
   console.log "[info]restart to download image <#{url}> to <#{filePath}>"
   downloadFile url, filePath
   
-  
+# 清理单个markdown中无效图片
+clearMarkdown = (filePath, saveDir)->
+  imgReg = /\!\[[^\]]*\]\(([^\)]+)\)(-)?/g
+  console.log "markdown path: #{filePath}"
+  content = fs.readFileSync filePath, 'utf8'
+  content = content.replace imgReg, ($0, $1, $2)->
+    imgPath = path.join saveDir, $1
+    try
+      stats = fs.statSync imgPath
+      if stats.size and stats.size > 1024 * 4
+        console.log "file #{imgPath} size: #{JSON.stringify(stats)}\n\n"
+        return $0
+    catch e
+      console.log "get file info error: #{e.message}"
+    
+    console.log 'remove image: ' + imgPath
+    try
+      fs.unlinkSync imgPath
+    catch e
+      console.log "[error] failed to unlink file: #{e.message}"
+    # 判断$2是否存在，避免重复替换标签
+    return if $2 then $0 else "<!--#{$0}-->"
+    
+  fs.writeFile filePath, content, 'utf8'
 
+# 清理无效图片
+clearInvalidImages = (saveDir)->
+  fs.readdir saveDir, (err,files)->
+    if err
+      console.log 'read file error: ' + err.message
+      return
+    files.forEach (file)->
+      filePath = path.join saveDir,file
+      stat = fs.statSync filePath
+      if stat.isFile() and /\.md$/.test(file)
+        clearMarkdown filePath, saveDir
+    
 
 # 主函数
 main = ->
@@ -287,11 +324,16 @@ main = ->
   unless rssPath
     console.log 'rssPath or blog path must be specified'
     return
-  # 命令i表示重新下载未成功下载的图片
-  if cmd is 'i'
-    getContentFrom rssPath, redownloadImgs
-  else
-    getContentFrom rssPath, parseRss
+
+  switch cmd
+    # 命令i表示重新下载未成功下载的图片
+    when 'i'
+      getContentFrom rssPath, redownloadImgs
+    # 清理下载失败的图片
+    when 'c'
+      clearInvalidImages rssPath
+    else
+      getContentFrom rssPath, parseRss
   
 
 do main    
